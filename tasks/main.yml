@@ -1,0 +1,51 @@
+---
+- name: install packages
+  apt:
+    name:
+        - samba
+        - avahi-daemon
+  when: "ansible_os_family == 'Debian'"
+    
+- name: enable and start services
+  service:
+    name: "{{ item }}"
+    enabled: yes
+    state: started
+  loop:
+    - smbd
+    - avahi-daemon
+
+- name: create mount points
+  file:
+    path: "{{ tm_data_path }}"
+    state: directory
+
+- name: create samba user
+  user:
+    name: tmbackup
+    password: "{{ tm_smb_pass }}"
+    uid: 1001
+    groups:
+        - sambashare
+
+- name: mount target directory
+  mount:
+    path: "{{ tm_data_path }}"
+    src: "{{ tm_data_device}}"
+    state: mounted
+    boot: yes
+    fstype: ext4
+
+- name: check if user exists
+  command: "pdbedit -w -L | grep tmbackup | wc -l"
+  register: tm_user_result
+
+- name: set samba user samba password
+  command: "printf '{{ tm_smb_pass }}\n{{ tm_smb_pass }}\n' | smbpasswd -a -s tmbackup"
+  when: tm_user_result.stdout_lines != 1
+
+- name: copy samba config
+  template:
+    src: smb.conf
+    dest: /etc/samba/smb.conf
+  notify: samba restart

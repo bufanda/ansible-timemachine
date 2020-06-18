@@ -1,0 +1,10 @@
+---
+- name: restart avahi
+  service:
+    name: avahi-daemon
+    state: restarted
+
+- name: samba restart
+  service:
+    name: smbd
+    state: restarted

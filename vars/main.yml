@@ -1,0 +1,4 @@
+---
+tm_smb_pass: s3cr3t
+tm_data_path: /tmbackup
+tm_data_device: /dev/sda
