@@ -17,7 +17,7 @@
 
 - name: create mount points
   file:
-    path: "{{ tm_data_path }}"
+    path: "{{ tm_smb_data_path }}"
     state: directory
 
 - name: create samba user
@@ -30,19 +30,20 @@
 
 - name: mount target directory
   mount:
-    path: "{{ tm_data_path }}"
-    src: "{{ tm_data_device}}"
+    path: "{{ tm_smb_data_path }}"
+    src: "{{ tm_smb_data_device }}"
     state: mounted
     boot: yes
-    fstype: ext4
+    fstype: "{{ tm_smb_data_device_fs }}"
 
 - name: check if user exists
-  command: "pdbedit -w -L | grep tmbackup | wc -l"
+  shell:  "pdbedit -w -L | grep tmbackup | wc -l"
+  become: yes
   register: tm_user_result
 
 - name: set samba user samba password
-  command: "printf '{{ tm_smb_pass }}\n{{ tm_smb_pass }}\n' | smbpasswd -a -s tmbackup"
-  when: tm_user_result.stdout_lines != 1
+  shell: "printf '{{ tm_smb_pass }}\n{{ tm_smb_pass }}\n' | smbpasswd -a -s tmbackup"
+  when: tm_user_result.stdout != "1"
 
 - name: copy samba config
   template:
